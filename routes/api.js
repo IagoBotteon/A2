@@ -2,56 +2,68 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/products');
 
-//get all products 
-router.get('/products', async (req, res) => {
-  const products = await Product.find();
-  res.json(products);
-});
+exports.getHomePage = (req, res) => {
+  res.json({ message: "Welcome" });
+};
 
-//get all products by id
-router.get('/products/:id', async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  res.json(product);
-});
-
-//add new product
-router.post('/products', async (req, res) => {
-  const newProduct = new Product(req.body);
-  await newProduct.save();
-  res.status(201).json(newProduct);
-});
-
-//update product by id
-router.put('/products/:id', async (req, res) => {
-  const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
+exports.getAllProducts = (req, res) => {
+  Product.find().then((data) => {
+    res.json(data);
   });
-  res.json(updatedProduct);
-});
+};
 
-//remove product by id
-router.delete('/products/:id', async (req, res) => {
-  const deletedProduct = await Product.findByIdAndRemove(req.params.id);
-  res.json(deletedProduct);
-});
+exports.getSpecifiedProduct = (req, res) => {
+  Product.findOne({ _id: req.params.id }).then((data) => {
+    res.json(data);
+  });
+};
 
-//remove all products
-router.delete('/products', async (req, res) => {
-  await Product.deleteMany();
-  res.json({ message: 'All products removed' });
-});
+exports.postProduct = (req, res) => {
+  const { name, description, price, quantity, category } = req.body;
 
-//find all published products
-router.get('/products/published', async (req, res) => {
-  const publishedProducts = await Product.find({ published: true });
-  res.json(publishedProducts);
-});
+  const product = new Product({
+    name,
+    description,
+    price,
+    quantity,
+    category,
+  });
 
-//find all products which name contains ‘kw’
-router.get('/product', async (req, res) => {
-  const keyword = req.query.name;
-  const products = await Product.find({ name: { $regex: keyword, $options: 'i' } });
-  res.json(products);
-});
+  product.save().then(() => {
+    res.redirect('/api/products');
+  });
+};
 
-module.exports = router;
+exports.editProduct = (req, res) => {
+  const { name, description, price, quantity, category } = req.body;
+
+  Product.findOne({ _id: req.params.id }).then((product) => {
+    product.name = name;
+    product.description = description;
+    product.price = price;
+    product.quantity = quantity;
+    product.category = category;
+
+    product.save().then(() => {
+      res.redirect('/api/products');
+    });
+  });
+};
+
+exports.deleteProduct = (req, res) => {
+  Product.deleteOne({ _id: req.params.id }).then(() => {
+    res.redirect('/api/products');
+  });
+};
+
+exports.deleteAllProduct = (req, res) => {
+  Product.deleteMany({}).then(() => {
+    res.redirect('/api/products');
+  });
+};
+
+exports.getProductBySearch = (req, res) => {
+  Product.findOne({ name: req.params.name }).then((data) => {
+    res.json({ data });
+  });
+};
